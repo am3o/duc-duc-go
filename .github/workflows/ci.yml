@@ -1,0 +1,28 @@
+name: CI/CD
+
+on:
+  push:
+
+jobs:
+  testing:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        step: [ test ]
+    steps:
+      - name: Cleanup workspace
+        run: |
+          echo "Cleaning up previous run from ${{ github.workspace }}"
+          set -e # fail on error
+          shopt -s dotglob # include hidden files
+          sudo rm -rf *
+
+      - name: Checkout repository code
+        uses: actions/checkout@v2
+
+      - name: ${{ matrix.step }}
+        run: docker run --rm --mount src=`pwd`,target=/go/service,type=bind golang:buster /bin/bash -c "cd /go/service && make ${{ matrix.step }}"
+
+      - name: Remove docker image
+        run: docker rmi golang:buster
